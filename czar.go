@@ -8,7 +8,6 @@ import (
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/awserr"
   "github.com/codeskyblue/go-sh"
-	//"github.com/aws/aws-sdk-go/aws/awsutil"
 )
 
 func main() {
@@ -30,11 +29,15 @@ func main() {
       },
       cli.StringFlag{
         Name:  "tag,t",
-        Usage: "tag name",
+        Usage: "tag name to filter by",
       },
       cli.StringFlag{
         Name:  "value,v",
-        Usage: "tag value",
+        Usage: "value of the tag key",
+      },
+      cli.StringFlag{
+        Name:  "user,u",
+        Usage: "user to log in with",
       },
     },
     Action: func(c *cli.Context) {
@@ -68,8 +71,6 @@ func main() {
       		}
       	}
 
-      	// Pretty-print the response data.
-      	//fmt.Println(awsutil.Prettify(resp))
         fmt.Println("> Number of reservation sets: ", len(resp.Reservations))
         for idx, res := range resp.Reservations {
             fmt.Println("  > Number of instances: ", len(res.Instances))
@@ -81,8 +82,12 @@ func main() {
                     fmt.Println("    - Tag: ", *tag.Value)
                   }
                 }
-                out, err := sh.Command("ssh-add",c.String("p") ).Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , c.String("p"), "ubuntu@",*inst.PublicDNSName, c.Args()[0] ).Output()
-                fmt.Println("Output: ",out,err)
+                session := sh.NewSession()
+                session.ShowCMD = true
+                session.Command("eval","`ssh-agent`").Run()
+                session.Command("ssh-add",c.String("p")).Run()
+                session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , c.String("p"), fmt.Sprintf("%s@%s",c.String("u"),*inst.PublicDNSName),fmt.Sprintf("%s",c.Args()[0])).Run()
+
             }
         }
       }
