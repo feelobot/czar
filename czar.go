@@ -16,6 +16,7 @@ func main() {
   svc := ec2.New(&aws.Config{Region: aws.String("us-east-1")})
   app := cli.NewApp()
   app.Name = "Czar AWS EC2 CLI"
+  app.Version = "0.0.1"
 
   app.Commands = []cli.Command{
   {
