@@ -8,7 +8,7 @@
 ## Usage
 ![help](http://i.imgur.com/CBOYuhm.png)
 
-* exec
+#### exec
 
 **Example:**
 
@@ -39,8 +39,8 @@ Identity added: /Users/felix.rodriguez/.ssh/aws-key.pem (/Users/felix.rodriguez/
 hello
 ```
 
-* list
+#### list
 todo
 
-* ssh
+#### ssh
 todo
