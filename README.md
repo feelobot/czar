@@ -18,7 +18,7 @@ czar exec -p "/Users/felix.rodriguez/.ssh/aws-key.pem" -u ubuntu --tag Name --va
 
 **Output:**
 ```
-> Number of reservation sets:  7
+> Number of reservation sets:  2
   > Number of instances:  1
     - Instance ID:  i-521e7282
     - DNS Name:  ec2-xx-xxx-xxx-xxx.compute-1.amazonaws.com
