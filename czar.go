@@ -7,7 +7,8 @@ import (
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
+  "github.com/codeskyblue/go-sh"
+	//"github.com/aws/aws-sdk-go/aws/awsutil"
 )
 
 func main() {
@@ -16,12 +17,17 @@ func main() {
   svc := ec2.New(&aws.Config{Region: aws.String("us-east-1")})
   app := cli.NewApp()
   app.Name = "Czar AWS EC2 CLI"
+
   app.Commands = []cli.Command{
   {
-    Name:      "ssh",
+    Name:      "exec",
     Aliases:     []string{"s"},
-    Usage:     "options for task templates",
+    Usage:     "execute commands accross ec2 instances",
     Flags: []cli.Flag{
+      cli.StringFlag{
+          Name:  "p, pem",
+          Usage: "Specify pem file",
+      },
       cli.StringFlag{
         Name:  "tag,t",
         Usage: "tag name",
@@ -63,13 +69,20 @@ func main() {
       	}
 
       	// Pretty-print the response data.
-      	fmt.Println(awsutil.Prettify(resp))
+      	//fmt.Println(awsutil.Prettify(resp))
         fmt.Println("> Number of reservation sets: ", len(resp.Reservations))
         for idx, res := range resp.Reservations {
             fmt.Println("  > Number of instances: ", len(res.Instances))
             for _, inst := range resp.Reservations[idx].Instances {
                 fmt.Println("    - Instance ID: ", *inst.InstanceID)
                 fmt.Println("    - DNS Name: ", *inst.PublicDNSName)
+                for _, tag := range inst.Tags {
+                  if *tag.Key == c.String("t") {
+                    fmt.Println("    - Tag: ", *tag.Value)
+                  }
+                }
+                out, err := sh.Command("ssh-add",c.String("p") ).Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , c.String("p"), "ubuntu@",*inst.PublicDNSName, c.Args()[0] ).Output()
+                fmt.Println("Output: ",out,err)
             }
         }
       }
