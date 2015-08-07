@@ -64,6 +64,14 @@ func main() {
 
       	// Pretty-print the response data.
       	fmt.Println(awsutil.Prettify(resp))
+        fmt.Println("> Number of reservation sets: ", len(resp.Reservations))
+        for idx, res := range resp.Reservations {
+            fmt.Println("  > Number of instances: ", len(res.Instances))
+            for _, inst := range resp.Reservations[idx].Instances {
+                fmt.Println("    - Instance ID: ", *inst.InstanceID)
+                fmt.Println("    - DNS Name: ", *inst.PublicDNSName)
+            }
+        }
       }
     },
   },
