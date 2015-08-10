@@ -6,19 +6,21 @@ import (
   "github.com/codegangsta/cli"
   "encoding/json"
   "fmt"
+  "strings"
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/awserr"
   "github.com/codeskyblue/go-sh"
 )
 
-type Configuration struct {
-    Key    []string
-    User   []string
-    Tag    []string
-}
-
 func main() {
+
+  type Configuration struct {
+      Key    string
+      User   string
+      Tag    string
+  }
+  /*
   file, _ := os.Open("~/.czar.cfg.json")
   decoder := json.NewDecoder(file)
   configuration := Configuration{}
@@ -27,26 +29,48 @@ func main() {
     fmt.Println("error:", err)
   }
   //fmt.Println(configuration.Users) // output: [UserA, UserB]
-
+  */
   // Note that you can also configure your region globally by
   // exporting the AWS_REGION environment variable
   svc := ec2.New(&aws.Config{Region: aws.String("us-east-1")})
   app := cli.NewApp()
   app.Name = "Czar AWS EC2 CLI"
   app.Version = "0.0.2"
-  app.Action = func(c *cli.Context) {
-    println("boom! I say!")
-  }
   app.Commands = []cli.Command{
   {
     Name:      "config",
     Aliases:     []string{"c"},
     Usage:     "configure czar defaults",
     Action: func(c *cli.Context) {
+      configuration := Configuration{}
+
       reader := bufio.NewReader(os.Stdin)
       fmt.Print("Enter Path to AWS Key (.pem): ")
       key_path, _ := reader.ReadString('\n')
-      fmt.Println(key_path)
+      configuration.Key = strings.TrimSpace(key_path)
+
+      fmt.Print("Default User? (ubuntu/core/root): ")
+      user, _ := reader.ReadString('\n')
+      configuration.User = strings.TrimSpace(user)
+
+      fmt.Print("Default Tag Search Filter? (Name): ")
+      tag, _ := reader.ReadString('\n')
+      configuration.Tag = strings.TrimSpace(tag)
+      json_string, err := json.Marshal(configuration)
+      if err != nil {
+          fmt.Println(err)
+          return
+      }
+      fmt.Println(string(json_string))
+
+      config_file, err := os.Create(fmt.Sprintf("%s/.czar.cfg.json",os.Getenv("HOME")))
+      if err != nil {
+         panic(err)
+      }
+      defer config_file.Close()
+      config_file.Write(json_string)
+      config_file.Close()
+      fmt.Printf("File created!")
     },
   },
   {
@@ -71,7 +95,6 @@ func main() {
         Usage: "user to log in with",
       },
     }, // End of Flags
-
     // Execute Action
     Action: func(c *cli.Context) {
       if len(c.String("v")) > 0 && len(c.String("t")) > 0 {

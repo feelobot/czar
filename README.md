@@ -1,7 +1,8 @@
 # czar
 
-## Install Options
+## Install:
 
+* Must have AWS environment variables set or configuration file.
 * Add binary file to your /usr/local/bin
 * Run build-all script to generate a binary for your machine (requires docker)
 
