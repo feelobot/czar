@@ -1,13 +1,18 @@
 # czar
 
-## Install:
+## Setup:
 
 * Must have AWS environment variables set or configuration file.
+
+## Install Options:
+
 * Add binary file to your /usr/local/bin
 * Run build-all script to generate a binary for your machine (requires docker)
 
 ## Usage
 ![help](http://i.imgur.com/CBOYuhm.png)
+
+Run ```czar config``` to set default options
 
 #### exec
 
@@ -16,6 +21,8 @@
 ```
 czar exec -p "/Users/felix.rodriguez/.ssh/aws-key.pem" -u ubuntu --tag Name --value "*spark*" "echo hello"
 ```
+
+or ```czar e -v "*spark*" "echo hello"``` for short.
 
 **Output:**
 ```
