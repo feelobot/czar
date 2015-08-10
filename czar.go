@@ -2,7 +2,9 @@ package main
 
 import (
   "os"
+  "bufio"
   "github.com/codegangsta/cli"
+  "encoding/json"
   "fmt"
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/service/ec2"
@@ -10,18 +12,46 @@ import (
   "github.com/codeskyblue/go-sh"
 )
 
+type Configuration struct {
+    Key    []string
+    User   []string
+    Tag    []string
+}
+
 func main() {
+  file, _ := os.Open("~/.czar.cfg.json")
+  decoder := json.NewDecoder(file)
+  configuration := Configuration{}
+  err := decoder.Decode(&configuration)
+  if err != nil {
+    fmt.Println("error:", err)
+  }
+  //fmt.Println(configuration.Users) // output: [UserA, UserB]
+
   // Note that you can also configure your region globally by
   // exporting the AWS_REGION environment variable
   svc := ec2.New(&aws.Config{Region: aws.String("us-east-1")})
   app := cli.NewApp()
   app.Name = "Czar AWS EC2 CLI"
-  app.Version = "0.0.1"
-
+  app.Version = "0.0.2"
+  app.Action = func(c *cli.Context) {
+    println("boom! I say!")
+  }
   app.Commands = []cli.Command{
   {
+    Name:      "config",
+    Aliases:     []string{"c"},
+    Usage:     "configure czar defaults",
+    Action: func(c *cli.Context) {
+      reader := bufio.NewReader(os.Stdin)
+      fmt.Print("Enter Path to AWS Key (.pem): ")
+      key_path, _ := reader.ReadString('\n')
+      fmt.Println(key_path)
+    },
+  },
+  {
     Name:      "exec",
-    Aliases:     []string{"s"},
+    Aliases:     []string{"e"},
     Usage:     "execute commands accross ec2 instances",
     Flags: []cli.Flag{
       cli.StringFlag{
@@ -40,7 +70,9 @@ func main() {
         Name:  "user,u",
         Usage: "user to log in with",
       },
-    },
+    }, // End of Flags
+
+    // Execute Action
     Action: func(c *cli.Context) {
       if len(c.String("v")) > 0 && len(c.String("t")) > 0 {
         params := &ec2.DescribeInstancesInput{
