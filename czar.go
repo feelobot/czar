@@ -97,10 +97,11 @@ func main() {
     }, // End of Flags
     // Execute Action
     Action: func(c *cli.Context) {
+      config := Configuration{}
       if _, err := os.Stat(configuration_file); err == nil {
         file, _ := os.Open(configuration_file)
         decoder := json.NewDecoder(file)
-        config := Configuration{}
+
         err := decoder.Decode(&config)
         if err != nil {
           fmt.Println("error:", err)
@@ -109,13 +110,21 @@ func main() {
         fmt.Println(config.Key)
         fmt.Println(config.Tag)
         fmt.Println(config.User)
+        if len(c.String("p")) > 0 {
+          config.Key = c.String("p")
+        }
+        if len(c.String("t")) > 0 {
+          config.Tag = c.String("t")
+        }
+        if len(c.String("u")) > 0 {
+          config.User = c.String("u")
+        }
       }
-
-      if len(c.String("v")) > 0 && len(c.String("t")) > 0 {
+      if len(c.String("v")) > 0 && len(config.Tag) > 0 {
         params := &ec2.DescribeInstancesInput{
       		Filters: []*ec2.Filter{
       			{ // Required
-      				Name: aws.String(fmt.Sprintf("tag:%s",c.String("t"))),
+      				Name: aws.String(fmt.Sprintf("tag:%s",config.Tag)),
       				Values: []*string{
       					aws.String(c.String("v")), // Required
       					// More values...
@@ -148,15 +157,15 @@ func main() {
                 fmt.Println("    - Instance ID: ", *inst.InstanceID)
                 fmt.Println("    - DNS Name: ", *inst.PublicDNSName)
                 for _, tag := range inst.Tags {
-                  if *tag.Key == c.String("t") {
+                  if *tag.Key == config.Tag {
                     fmt.Println("    - Tag: ", *tag.Value)
                   }
                 }
                 session := sh.NewSession()
                 session.ShowCMD = true
                 session.Command("eval","`ssh-agent`").Run()
-                session.Command("ssh-add",c.String("p")).Run()
-                session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , c.String("p"), fmt.Sprintf("%s@%s",c.String("u"),*inst.PublicDNSName),fmt.Sprintf("%s",c.Args()[0])).Run()
+                session.Command("ssh-add",config.Key).Run()
+                session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , config.Key, fmt.Sprintf("%s@%s",config.User,*inst.PublicDNSName),fmt.Sprintf("%s",c.Args()[0])).Run()
 
             }
         }
