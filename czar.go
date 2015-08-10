@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-
+  configuration_file := fmt.Sprintf("%s/.czar.cfg.json",os.Getenv("HOME"))
   type Configuration struct {
       Key    string
       User   string
@@ -63,7 +63,7 @@ func main() {
       }
       fmt.Println(string(json_string))
 
-      config_file, err := os.Create(fmt.Sprintf("%s/.czar.cfg.json",os.Getenv("HOME")))
+      config_file, err := os.Create(configuration_file)
       if err != nil {
          panic(err)
       }
@@ -97,6 +97,20 @@ func main() {
     }, // End of Flags
     // Execute Action
     Action: func(c *cli.Context) {
+      if _, err := os.Stat(configuration_file); err == nil {
+        file, _ := os.Open(configuration_file)
+        decoder := json.NewDecoder(file)
+        config := Configuration{}
+        err := decoder.Decode(&config)
+        if err != nil {
+          fmt.Println("error:", err)
+        }
+        // DEBUGGING
+        fmt.Println(config.Key)
+        fmt.Println(config.Tag)
+        fmt.Println(config.User)
+      }
+
       if len(c.String("v")) > 0 && len(c.String("t")) > 0 {
         params := &ec2.DescribeInstancesInput{
       		Filters: []*ec2.Filter{
