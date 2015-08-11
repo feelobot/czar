@@ -8,6 +8,8 @@ import (
   "fmt"
   "strings"
   "github.com/aws/aws-sdk-go/aws"
+  "github.com/fatih/color"
+  //"github.com/aws/aws-sdk-go/aws/awsutil"
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/awserr"
   "github.com/codeskyblue/go-sh"
@@ -16,10 +18,14 @@ import (
 func main() {
   configuration_file := fmt.Sprintf("%s/.czar.cfg.json",os.Getenv("HOME"))
   type Configuration struct {
-      Key    string
-      User   string
-      Tag    string
+      Key       string
+      User      string
+      Tag       string
+      Metadata  bool
   }
+
+  cyan := color.New(color.FgCyan).SprintFunc()
+  yellow := color.New(color.FgYellow).SprintFunc()
   /*
   file, _ := os.Open("~/.czar.cfg.json")
   decoder := json.NewDecoder(file)
@@ -94,6 +100,10 @@ func main() {
         Name:  "user,u",
         Usage: "user to log in with",
       },
+      cli.BoolFlag{
+        Name:  "metadata,m",
+        Usage: "displays more data per instance if true",
+      },
     }, // End of Flags
     // Execute Action
     Action: func(c *cli.Context) {
@@ -107,9 +117,9 @@ func main() {
           fmt.Println("error:", err)
         }
         // DEBUGGING
-        fmt.Println(config.Key)
-        fmt.Println(config.Tag)
-        fmt.Println(config.User)
+        //fmt.Println(config.Key)
+        //fmt.Println(config.Tag)
+        //fmt.Println(config.User)
         if len(c.String("p")) > 0 {
           config.Key = c.String("p")
         }
@@ -119,6 +129,7 @@ func main() {
         if len(c.String("u")) > 0 {
           config.User = c.String("u")
         }
+        config.Metadata = c.Bool("m")
       }
       if len(c.String("v")) > 0 && len(config.Tag) > 0 {
         params := &ec2.DescribeInstancesInput{
@@ -150,21 +161,24 @@ func main() {
       		}
       	}
 
-        fmt.Println("> Number of reservation sets: ", len(resp.Reservations))
-        for idx, res := range resp.Reservations {
-            fmt.Println("  > Number of instances: ", len(res.Instances))
+        //Start a Shell Session
+        session := sh.NewSession()
+        session.ShowCMD = false
+        session.Command("eval","`ssh-agent`").Run()
+        session.Command("ssh-add",config.Key).Run()
+
+        fmt.Println(fmt.Sprintf("ReservationSets: %v", len(resp.Reservations)))
+        for idx, _ := range resp.Reservations {
             for _, inst := range resp.Reservations[idx].Instances {
-                fmt.Println("    - Instance ID: ", *inst.InstanceID)
-                fmt.Println("    - DNS Name: ", *inst.PublicDNSName)
                 for _, tag := range inst.Tags {
                   if *tag.Key == config.Tag {
-                    fmt.Println("    - Tag: ", *tag.Value)
+                    fmt.Println(fmt.Sprintf("%s:", cyan(*tag.Value)))
+                    if config.Metadata {
+                      fmt.Println(yellow(fmt.Sprintf("%s %s %s",*inst.InstanceID,*inst.PublicDNSName,*inst.PrivateIPAddress)))
+                      //fmt.Println(awsutil.Prettify(*inst))
+                    }
                   }
                 }
-                session := sh.NewSession()
-                session.ShowCMD = true
-                session.Command("eval","`ssh-agent`").Run()
-                session.Command("ssh-add",config.Key).Run()
                 session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i" , config.Key, fmt.Sprintf("%s@%s",config.User,*inst.PublicDNSName),fmt.Sprintf("%s",c.Args()[0])).Run()
 
             }
