@@ -9,10 +9,11 @@ import (
 	"github.com/fatih/color"
 	"os"
 	"strings"
-	//"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/codeskyblue/go-sh"
+	"github.com/czar/pkg/ls"
 )
 
 func main() {
@@ -26,22 +27,12 @@ func main() {
 
 	cyan := color.New(color.FgCyan).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	/*
-	  file, _ := os.Open("~/.czar.cfg.json")
-	  decoder := json.NewDecoder(file)
-	  configuration := Configuration{}
-	  err := decoder.Decode(&configuration)
-	  if err != nil {
-	    fmt.Println("error:", err)
-	  }
-	  //fmt.Println(configuration.Users) // output: [UserA, UserB]
-	*/
-	// Note that you can also configure your region globally by
-	// exporting the AWS_REGION environment variable
-	svc := ec2.New(&aws.Config{Region: aws.String("us-east-1")})
+
+	svc := ec2.New(&aws.Config{Region: aws.String(os.Getenv("AWS_REGION"))})
 	app := cli.NewApp()
+
 	app.Name = "Czar AWS EC2 CLI"
-	app.Version = "0.0.2"
+	app.Version = "0.0.3"
 	app.Commands = []cli.Command{
 		{
 			Name:    "config",
@@ -77,6 +68,25 @@ func main() {
 				config_file.Write(json_string)
 				config_file.Close()
 				fmt.Printf("File created!")
+			},
+		},
+		{
+			Name:    "ls",
+			Usage:   "execute commands accross ec2 instances",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "n, name",
+					Usage: "Specify instance name",
+				},
+			},
+			Action: func(c *cli.Context) {
+				var name string
+				if len(c.Args()[0]) > 0 {
+					name = c.Args()[0]
+				} else {
+					name = c.String("n")
+				}
+				ls.run(name)
 			},
 		},
 		{
@@ -173,13 +183,14 @@ func main() {
 							for _, tag := range inst.Tags {
 								if *tag.Key == config.Tag {
 									fmt.Println(fmt.Sprintf("%s:", cyan(*tag.Value)))
+									fmt.Println(awsutil.Prettify(*inst))
 									if config.Metadata {
-										fmt.Println(yellow(fmt.Sprintf("%s %s %s", *inst.InstanceID, *inst.PublicDNSName, *inst.PrivateIPAddress)))
-										//fmt.Println(awsutil.Prettify(*inst))
+										fmt.Println("Metadata")
+										//fmt.Println(yellow(fmt.Sprintf("%s %s %s", *inst.InstanceID, *inst.PublicDNSName, *inst.PrivateIPAddress)))
 									}
 								}
 							}
-							session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", config.Key, fmt.Sprintf("%s@%s", config.User, *inst.PublicDNSName), fmt.Sprintf("%s", c.Args()[0])).Run()
+							session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", config.Key, fmt.Sprintf("%s@%s", config.User), fmt.Sprintf("%s", c.Args()[0])).Run()
 
 						}
 					}

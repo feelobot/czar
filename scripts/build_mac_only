@@ -1,11 +1,7 @@
-docker run --rm -it -v "$PWD":/go/src/github.com/feelobot/czar -w /go/src/github.com/feelobot/czar/ golang:1.4.2-cross sh -c '
+docker run --rm -it -v "$PWD":/go/src/czar -w /go/src/czar/ golang:1.4.2-cross sh -c '
 go get
-for GOOS in darwin; do
-  for GOARCH in amd64; do
-    echo "Building $GOOS-$GOARCH"
-    export GOOS=$GOOS
-    export GOARCH=$GOARCH
-    go build -o bin/czar-$GOOS-$GOARCH
-  done
-done
+export GOOS=darwin
+export GOARCH=amd64
+echo "Building $GOOS-$GOARCH"
+go build -o bin/czar-$GOOS-$GOARCH
 '
