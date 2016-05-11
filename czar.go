@@ -5,21 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	_ "github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/codegangsta/cli"
+	"github.com/codeskyblue/go-sh"
 	"github.com/fatih/color"
+	"github.com/feelobot/czar/cmds"
 	"os"
 	"strings"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/codeskyblue/go-sh"
-	"github.com/czar/pkg/ls"
 )
 
 func main() {
 	configuration_file := fmt.Sprintf("%s/.czar.cfg.json", os.Getenv("HOME"))
 	type Configuration struct {
-		Key      string
 		User     string
 		Tag      string
 		Metadata bool
@@ -28,7 +28,7 @@ func main() {
 	cyan := color.New(color.FgCyan).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 
-	svc := ec2.New(&aws.Config{Region: aws.String(os.Getenv("AWS_REGION"))})
+	svc := ec2.New(session.New(), &aws.Config{Region: aws.String("us-east-1")})
 	app := cli.NewApp()
 
 	app.Name = "Czar AWS EC2 CLI"
@@ -38,13 +38,10 @@ func main() {
 			Name:    "config",
 			Aliases: []string{"c"},
 			Usage:   "configure czar defaults",
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				configuration := Configuration{}
 
 				reader := bufio.NewReader(os.Stdin)
-				fmt.Print("Enter Path to AWS Key (.pem): ")
-				key_path, _ := reader.ReadString('\n')
-				configuration.Key = strings.TrimSpace(key_path)
 
 				fmt.Print("Default User? (ubuntu/core/root): ")
 				user, _ := reader.ReadString('\n')
@@ -56,7 +53,6 @@ func main() {
 				json_string, err := json.Marshal(configuration)
 				if err != nil {
 					fmt.Println(err)
-					return
 				}
 				fmt.Println(string(json_string))
 
@@ -68,11 +64,12 @@ func main() {
 				config_file.Write(json_string)
 				config_file.Close()
 				fmt.Printf("File created!")
+				return nil
 			},
 		},
 		{
-			Name:    "ls",
-			Usage:   "execute commands accross ec2 instances",
+			Name:  "ls",
+			Usage: "execute commands accross ec2 instances",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "n, name",
@@ -86,7 +83,7 @@ func main() {
 				} else {
 					name = c.String("n")
 				}
-				ls.run(name)
+				cmds.Ls(name)
 			},
 		},
 		{
@@ -94,10 +91,6 @@ func main() {
 			Aliases: []string{"e"},
 			Usage:   "execute commands accross ec2 instances",
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "p, pem",
-					Usage: "Specify pem file",
-				},
 				cli.StringFlag{
 					Name:  "tag,t",
 					Usage: "tag name to filter by",
@@ -116,31 +109,15 @@ func main() {
 				},
 			}, // End of Flags
 			// Execute Action
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				config := Configuration{}
-				if _, err := os.Stat(configuration_file); err == nil {
-					file, _ := os.Open(configuration_file)
-					decoder := json.NewDecoder(file)
-
-					err := decoder.Decode(&config)
-					if err != nil {
-						fmt.Println("error:", err)
-					}
-					// DEBUGGING
-					//fmt.Println(config.Key)
-					//fmt.Println(config.Tag)
-					//fmt.Println(config.User)
-					if len(c.String("p")) > 0 {
-						config.Key = c.String("p")
-					}
-					if len(c.String("t")) > 0 {
-						config.Tag = c.String("t")
-					}
-					if len(c.String("u")) > 0 {
-						config.User = c.String("u")
-					}
-					config.Metadata = c.Bool("m")
+				if len(c.String("t")) > 0 {
+					config.Tag = c.String("t")
 				}
+				if len(c.String("u")) > 0 {
+					config.User = c.String("u")
+				}
+				config.Metadata = c.Bool("m")
 				if len(c.String("v")) > 0 && len(config.Tag) > 0 {
 					params := &ec2.DescribeInstancesInput{
 						Filters: []*ec2.Filter{
@@ -174,8 +151,6 @@ func main() {
 					//Start a Shell Session
 					session := sh.NewSession()
 					session.ShowCMD = false
-					session.Command("eval", "`ssh-agent`").Run()
-					session.Command("ssh-add", config.Key).Run()
 
 					fmt.Println(fmt.Sprintf("ReservationSets: %v", len(resp.Reservations)))
 					for idx, _ := range resp.Reservations {
@@ -183,18 +158,19 @@ func main() {
 							for _, tag := range inst.Tags {
 								if *tag.Key == config.Tag {
 									fmt.Println(fmt.Sprintf("%s:", cyan(*tag.Value)))
-									fmt.Println(awsutil.Prettify(*inst))
+									//fmt.Println(awsutil.Prettify(*inst))
 									if config.Metadata {
 										fmt.Println("Metadata")
-										//fmt.Println(yellow(fmt.Sprintf("%s %s %s", *inst.InstanceID, *inst.PublicDNSName, *inst.PrivateIPAddress)))
+										fmt.Println(yellow(fmt.Sprintf("%s %s %s", *inst.InstanceId, *inst.PublicDnsName, *inst.PrivateIpAddress)))
 									}
 								}
 							}
-							session.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", config.Key, fmt.Sprintf("%s@%s", config.User), fmt.Sprintf("%s", c.Args()[0])).Run()
+							session.Command("ssh", "-t", "-t", "-o", "StrictHostKeyChecking=no", fmt.Sprintf("%s@%s", config.User, *inst.PrivateIpAddress), fmt.Sprintf("%s", c.Args()[0])).Run()
 
 						}
 					}
 				}
+				return nil
 			},
 		},
 	}
