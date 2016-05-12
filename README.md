@@ -14,18 +14,18 @@
 ## LS
 
 ```
-➜  czar git:(master) ./czar ls --tag "application" --value "external-ingress"
+➜ czar ls --tag "application" --value "external-ingress"
 ```
 
 
 **wildcards** 
 
 ```
-➜  czar git:(master) ✗ ./czar ls -t "application" -v "*ingress*"
+➜ czar ls -t "application" -v "*ingress*"
 ```
 
 ## ssh
 
 ```
-./czar ssh -u "core" -t "Name" -v "prod_kube*" "df -h"
+➜ czar ssh -u "core" -t "Name" -v "prod_kube*" "df -h"
 ```
