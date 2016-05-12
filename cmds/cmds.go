@@ -16,8 +16,54 @@ func init() {
 }
 
 func Ls(c *cli.Context) {
-	//svc := ec2.New(session.New(), &aws.Config{Region: aws.String("us-east-1")})
-	fmt.Println("using ls", c.String("t"))
+	svc := ec2.New(session.New(), &aws.Config{Region: aws.String("us-east-1")})
+	cyan := color.New(color.FgCyan).SprintFunc()
+	orange := color.New(color.FgMagenta).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	params := &ec2.DescribeInstancesInput{
+		Filters: []*ec2.Filter{
+			{ // Required
+				Name: aws.String(fmt.Sprintf("tag:%s", c.String("t"))),
+				Values: []*string{
+					aws.String(c.String("v")), // Required
+					// More values...
+				},
+			},
+			// More values...
+		},
+	}
+	resp, err := svc.DescribeInstances(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	for idx, _ := range resp.Reservations {
+		for _, inst := range resp.Reservations[idx].Instances {
+			for _, tag := range inst.Tags {
+				if *tag.Key == c.String("t") {
+					fmt.Printf(fmt.Sprintf("%s: ", cyan(*tag.Value)))
+					if c.Bool("d") {
+						fmt.Println(awsutil.Prettify(*inst))
+					}
+					fmt.Printf(*inst.InstanceId)
+					fmt.Printf(yellow(fmt.Sprintf(" %s ", *inst.PublicDnsName)))
+					fmt.Println(orange(fmt.Sprintf("%s", *inst.PrivateIpAddress)))
+				}
+			}
+		}
+	}
 }
 
 func Ssh(c *cli.Context) {
@@ -84,4 +130,8 @@ func Ssh(c *cli.Context) {
 			}
 		}
 	}
+}
+
+func exec() {
+
 }
