@@ -20,7 +20,7 @@ external-ingress: i-ecde1176 ec2-52-91-238-92.compute-1.amazonaws.com 172.16.13.
 external-ingress: i-02144685 ec2-52-201-237-57.compute-1.amazonaws.com 172.16.12.173
 ```
 
-** wildcards ** 
+**wildcards** 
 
 ```
 ➜  czar git:(master) ✗ ./czar ls -t "application" -v "*ingress*"
