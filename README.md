@@ -8,7 +8,7 @@
 
 **MAC**
 
-`curl -O --insecure -o /usr/local/bin/czar https://github.com/feelobot/czar/releases/download/0.0.3/czar-macosx && sudo chmod +x /usr/local/bin/czar`
+`wget -O /usr/local/bin/czar https://github.com/feelobot/czar/releases/download/0.0.3/czar-macosx && sudo chmod +x /usr/local/bin/czar`
 
 
 ## LS
