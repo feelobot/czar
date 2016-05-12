@@ -7,6 +7,7 @@
 ## Install Options:
 
 **MAC**
+
 `curl -O --insecure -o /usr/local/bin/czar https://github.com/feelobot/czar/releases/download/0.0.3/czar-macosx && sudo chmod +x /usr/local/bin/czar`
 
 
@@ -20,6 +21,7 @@ external-ingress: i-02144685 ec2-52-201-237-57.compute-1.amazonaws.com 172.16.12
 ```
 
 ** wildcards ** 
+
 ```
 ➜  czar git:(master) ✗ ./czar ls -t "application" -v "*ingress*"
 external-ingress-prod: i-f2a5df75 ec2-107-23-130-139.compute-1.amazonaws.com 172.16.12.245
@@ -30,6 +32,7 @@ external-ingress-prod: i-fa9d6060 ec2-52-90-137-214.compute-1.amazonaws.com 172.
 ```
 
 ## ssh
+
 ```
 ./czar ssh -u "core" -t "Name" -v "prod_kube*" "df -h"
 ```
