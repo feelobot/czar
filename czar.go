@@ -12,7 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/feelobot/czar/cmds"
 	"os"
-	"strconv"
+	_ "strconv"
 )
 
 func main() {
@@ -29,12 +29,9 @@ func main() {
 		{
 			Name:  "ls",
 			Usage: "execute commands accross ec2 instances",
-			},
-			Action: func(c *cli.Context) {
-				if len(c.Args()[0]) > 0 {
-					name = c.Args()[0]
-				}
+			Action: func(c *cli.Context) error {
 				cmds.Ls(c)
+				return nil
 			},
 		},
 		{
@@ -58,6 +55,10 @@ func main() {
 					Name:  "metadata,m",
 					Usage: "displays more data per instance if true",
 				},
+				cli.BoolFlag{
+					Name:  "debug,d",
+					Usage: "show debugging info",
+				},
 			}, // End of Flags
 			// Execute Action
 			Action: func(c *cli.Context) error {
@@ -73,7 +74,6 @@ func main() {
 							},
 							// More values...
 						},
-						return nil
 					}
 					resp, err := svc.DescribeInstances(params)
 
@@ -103,7 +103,7 @@ func main() {
 								if *tag.Key == c.String("t") {
 									fmt.Println(fmt.Sprintf("%s:", cyan(*tag.Value)))
 									//fmt.Println(awsutil.Prettify(*inst))
-									if b, err := strconv.ParseBool(c.String("m")); err != nil && b == true {
+									if c.Bool("m") {
 										fmt.Println("Metadata")
 										fmt.Println(yellow(fmt.Sprintf("%s %s %s", *inst.InstanceId, *inst.PublicDnsName, *inst.PrivateIpAddress)))
 									}
@@ -117,5 +117,6 @@ func main() {
 				return nil
 			},
 		},
-		app.Run(os.Args)
 	}
+	app.Run(os.Args)
+}
