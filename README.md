@@ -21,7 +21,7 @@
 **wildcards** 
 
 ```
-➜ czar ls -t "application" -v "*ingress*"
+➜ czar ls -t "Name" -v "*ingress*"
 ```
 
 ## ssh
