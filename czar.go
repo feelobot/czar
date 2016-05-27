@@ -11,7 +11,7 @@ func main() {
 	app := cli.NewApp()
 
 	app.Name = "Czar AWS EC2 CLI"
-	app.Version = "0.0.4"
+	app.Version = "0.0.5"
 	app.Commands = []cli.Command{
 		{
 			Name:  "ls",
