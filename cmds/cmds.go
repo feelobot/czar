@@ -128,11 +128,16 @@ func Ssh(c *cli.Context) {
 							tag := *tag.Value
 							id := *inst.InstanceId
 							dns := *inst.PublicDnsName
-							ip := *inst.PrivateIpAddress
+							ip := ""
+							if c.Bool("p") {
+								ip += *inst.PublicIpAddress
+							} else {
+								ip += *inst.PrivateIpAddress
+							}
 							output, _ := session.Command("ssh", "-q", "-t", "-t", "-o", "StrictHostKeyChecking=no", fmt.Sprintf("%s@%s", c.String("u"), *inst.PrivateIpAddress), fmt.Sprintf("%s", c.Args()[0])).Output()
 							fmt.Println(fmt.Sprintf("%s %s %s %s: \n%s", cyan(id), magenta(tag), yellow(ip), green(dns), output))
 							if c.Bool("d") {
-								fmt.Println(awsutil.Prettify(*inst))
+								//fmt.Println(awsutil.Prettify(*inst))
 							}
 						}
 						wg.Done()

@@ -18,8 +18,9 @@ func main() {
 			Usage: "execute commands accross ec2 instances",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "tag,t",
-					Usage: "tag name to filter by",
+					Name:   "tag,t",
+					Usage:  "tag name to filter by",
+					EnvVar: "CZAR_TAG",
 				},
 				cli.StringFlag{
 					Name:  "value,v",
@@ -40,8 +41,9 @@ func main() {
 			Usage: "execute commands accross ec2 instances",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "tag,t",
-					Usage: "tag name to filter by",
+					Name:   "tag,t",
+					Usage:  "tag name to filter by",
+					EnvVar: "CZAR_TAG",
 				},
 				cli.StringFlag{
 					Name:  "value,v",
@@ -52,8 +54,9 @@ func main() {
 					Usage: "show debugging info",
 				},
 				cli.StringFlag{
-					Name:  "user,u",
-					Usage: "user to log in with",
+					Name:   "user,u",
+					Usage:  "user to log in with",
+					EnvVar: "CZAR_USER",
 				},
 				cli.StringFlag{
 					Name:  "concurrency,c",
@@ -66,6 +69,10 @@ func main() {
 				cli.BoolFlag{
 					Name:  "metadata,m",
 					Usage: "displays more data per instance if true",
+				},
+				cli.BoolFlag{
+					Name:  "public,p",
+					Usage: "use public ip for ssh",
 				},
 			}, // End of Flags
 			// Execute Action
