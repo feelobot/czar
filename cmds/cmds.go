@@ -11,7 +11,6 @@ import (
 	"github.com/codeskyblue/go-sh"
 	"github.com/fatih/color"
 	"runtime"
-	"sync"
 )
 
 func init() {
@@ -119,33 +118,26 @@ func Ssh(c *cli.Context) {
 
 		fmt.Println(fmt.Sprintf("ReservationSets: %v", len(resp.Reservations)))
 		for idx, _ := range resp.Reservations {
-			var wg sync.WaitGroup
 			for _, inst := range resp.Reservations[idx].Instances {
 				for _, tag := range inst.Tags {
-					wg.Add(1)
-					go func() {
-						if *tag.Key == c.String("t") {
-							tag := *tag.Value
-							id := *inst.InstanceId
-							dns := *inst.PublicDnsName
-							ip := ""
-							if c.Bool("p") {
-								ip += *inst.PublicIpAddress
-							} else {
-								ip += *inst.PrivateIpAddress
-							}
-							output, _ := session.Command("ssh", "-q", "-t", "-t", "-o", "StrictHostKeyChecking=no", fmt.Sprintf("%s@%s", c.String("u"), *inst.PrivateIpAddress), fmt.Sprintf("%s", c.Args()[0])).Output()
-							fmt.Println(fmt.Sprintf("%s %s %s %s: \n%s", cyan(id), magenta(tag), yellow(ip), green(dns), output))
-							if c.Bool("d") {
-								//fmt.Println(awsutil.Prettify(*inst))
-							}
+					if *tag.Key == c.String("t") {
+						tag := *tag.Value
+						id := *inst.InstanceId
+						dns := *inst.PublicDnsName
+						ip := ""
+						if c.Bool("p") {
+							ip += *inst.PublicIpAddress
+						} else {
+							ip += *inst.PrivateIpAddress
 						}
-						wg.Done()
-					}()
+						output, _ := session.Command("ssh", "-q", "-t", "-t", "-o", "StrictHostKeyChecking=no", fmt.Sprintf("%s@%s", c.String("u"), *inst.PrivateIpAddress), fmt.Sprintf("%s", c.Args()[0])).Output()
+						fmt.Println(fmt.Sprintf("%s %s %s %s: \n%s", cyan(id), magenta(tag), yellow(ip), green(dns), output))
+						if c.Bool("d") {
+							//fmt.Println(awsutil.Prettify(*inst))
+						}
+					}
 				}
 			}
-			// Wait for the goroutines to finish.
-			wg.Wait()
 		}
 	}
 }
